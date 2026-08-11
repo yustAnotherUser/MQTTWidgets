@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MQTT Widgets</string>
+    <string name="widget_desc_small">Small widget showing a single MQTT value</string>
+    <string name="widget_desc_compact">Widget with label and MQTT value</string>
+    <string name="widget_desc_wide">Wide widget with label, value, and status</string>
+</resources>
