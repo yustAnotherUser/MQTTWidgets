@@ -135,14 +135,30 @@ object WidgetUpdater {
             try {
                 val db = AppDatabase.getDatabase(context)
                 val card = db.cardDao().getCardById(cardId) ?: return@launch
-                val ids = card.pinnedWidgetIds.split(",").mapNotNull { it.trim().toIntOrNull() }
-                if (ids.isEmpty()) return@launch
+                val pinnedIds = card.pinnedWidgetIds.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
+                val normTopic = card.topic.trim().removePrefix("/")
+                val mgr = AppWidgetManager.getInstance(context) ?: return@launch
                 val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
-                prefs.edit().apply {
-                    for (id in ids) putFloat("widget_${id}_fontSize", sizeSp)
-                    apply()
+                var changed = false
+                val providers = listOf(
+                    ComponentName(context, WidgetProviderSmall::class.java),
+                    ComponentName(context, WidgetProviderCompact::class.java),
+                    ComponentName(context, WidgetProviderWide::class.java)
+                )
+                for (provider in providers) {
+                    val hosted = try { mgr.getAppWidgetIds(provider) ?: intArrayOf() } catch (_: Exception) { intArrayOf() }
+                    for (id in hosted) {
+                        val storedTopic = prefs.getString("widget_${id}_topic", null)
+                        val matches = id in pinnedIds ||
+                            storedTopic == null ||
+                            storedTopic.isBlank() ||
+                            storedTopic.trim().removePrefix("/") == normTopic
+                        if (!matches) continue
+                        prefs.edit().putFloat("widget_${id}_fontSize", sizeSp).apply()
+                        changed = true
+                    }
                 }
-                updateAllWidgets(context)
+                if (changed) updateAllWidgets(context)
             } catch (_: Exception) {}
         }
     }
