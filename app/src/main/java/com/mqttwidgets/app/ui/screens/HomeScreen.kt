@@ -100,7 +100,9 @@ fun HomeScreen(modifier: Modifier = Modifier, showCreateDialog: Boolean, onDismi
         if (showCreateDialog) {
             CreateWidgetDialog(
                 onDismiss = onDismissCreateDialog,
-                onCreate = { newCard ->
+                onCreate = { newCard, fontSize ->
+                    context.getSharedPreferences("widget_prefs", android.content.Context.MODE_PRIVATE)
+                        .edit().putFloat("pending_font_size", fontSize).apply()
                     scope.launch {
                         db.cardDao().insertCard(newCard)
                         context.sendBroadcast(Intent("com.mqttwidgets.TOPICS_CHANGED"))

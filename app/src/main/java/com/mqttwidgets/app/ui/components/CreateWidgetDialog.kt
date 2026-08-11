@@ -14,7 +14,7 @@ import com.mqttwidgets.app.data.CardFormat
 import com.mqttwidgets.app.data.CardSize
 
 @Composable
-fun CreateWidgetDialog(onDismiss: () -> Unit, onCreate: (Card) -> Unit) {
+fun CreateWidgetDialog(onDismiss: () -> Unit, onCreate: (Card, Float) -> Unit) {
     var label by remember { mutableStateOf("") }
     var topic by remember { mutableStateOf("") }
     var size by remember { mutableStateOf(CardSize.COMPACT) }
@@ -22,6 +22,7 @@ fun CreateWidgetDialog(onDismiss: () -> Unit, onCreate: (Card) -> Unit) {
     var jsonPath by remember { mutableStateOf("") }
     var decimals by remember { mutableStateOf("1") }
     var unit by remember { mutableStateOf("") }
+    var fontSize by remember { mutableStateOf(20f) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -37,6 +38,23 @@ fun CreateWidgetDialog(onDismiss: () -> Unit, onCreate: (Card) -> Unit) {
                 }
 
                 OutlinedTextField(value = topic, onValueChange = { topic = it }, label = { Text("MQTT Topic") }, modifier = Modifier.fillMaxWidth())
+
+                HorizontalDivider()
+                Text("Widget Font Size", style = MaterialTheme.typography.labelMedium)
+                WidgetSizePreview(
+                    size = size,
+                    label = label,
+                    value = if (unit.isNotBlank()) "25.4 $unit" else "--",
+                    time = "--:--",
+                    fontSize = fontSize
+                )
+                Text("${fontSize.toInt()} sp", style = MaterialTheme.typography.labelSmall)
+                Slider(
+                    value = fontSize,
+                    onValueChange = { fontSize = it },
+                    valueRange = 10f..40f,
+                    steps = 29
+                )
 
                 TestButton(topic = topic, onValueSelected = { f, jp, u ->
                     format = when (f) {
@@ -66,7 +84,7 @@ fun CreateWidgetDialog(onDismiss: () -> Unit, onCreate: (Card) -> Unit) {
                         highColor = 0xFFE53935.toInt(), normalColor = 0xFF43A047.toInt(), lowColor = 0xFF1E88E5.toInt(),
                         lastValue = "", lastFormattedValue = "", lastUpdated = 0L, consecutiveFailures = 0, pinnedWidgetIds = ""
                     )
-                    onCreate(card)
+                    onCreate(card, fontSize)
                 },
                 enabled = label.isNotBlank() && topic.isNotBlank()
             ) { Text("Create") }

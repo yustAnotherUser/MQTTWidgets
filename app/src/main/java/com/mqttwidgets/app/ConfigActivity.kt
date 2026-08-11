@@ -33,6 +33,12 @@ class ConfigActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("widget_prefs", MODE_PRIVATE)
         val pendingCardId = prefs.getString("pending_card_id", null)
+        val pendingFontSize = prefs.getFloat("pending_font_size", 0f)
+
+        if (pendingFontSize > 0f) {
+            prefs.edit().putFloat("widget_${widgetId}_fontSize", pendingFontSize).apply()
+        }
+        prefs.edit().remove("pending_font_size").apply()
 
         if (pendingCardId != null) {
             runBlocking {

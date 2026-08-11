@@ -63,6 +63,15 @@ fun EditWidgetDialog(card: Card, initialFontSize: Float, onDismiss: () -> Unit, 
 
                 HorizontalDivider()
                 Text("Widget Font Size", style = MaterialTheme.typography.labelMedium)
+                WidgetSizePreview(
+                    size = size,
+                    label = label,
+                    value = card.lastFormattedValue.ifBlank { "--" },
+                    time = if (card.lastUpdated > 0L) {
+                        java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(card.lastUpdated))
+                    } else "--:--",
+                    fontSize = fontSize
+                )
                 Text("${fontSize.toInt()} sp", style = MaterialTheme.typography.labelSmall)
                 Slider(
                     value = fontSize,
