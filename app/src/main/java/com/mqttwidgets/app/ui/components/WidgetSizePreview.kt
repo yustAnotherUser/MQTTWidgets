@@ -24,31 +24,45 @@ fun WidgetSizePreview(
     fontSize: Float,
     modifier: Modifier = Modifier
 ) {
+    val ratio = when (size) {
+        CardSize.SMALL -> 1f
+        CardSize.COMPACT -> 2f
+        CardSize.WIDE -> 3f
+    }
     val small = size == CardSize.SMALL
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(if (small) 72.dp else 84.dp)
-            .clip(RoundedCornerShape(if (small) 6.dp else 12.dp))
-            .background(Color(0xFF2C2C2C))
-            .padding(if (small) 8.dp else 12.dp),
-        contentAlignment = if (small) Alignment.Center else Alignment.CenterStart
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(horizontalAlignment = if (small) Alignment.CenterHorizontally else Alignment.Start) {
-                if (!small) {
-                    Text(label.ifBlank { "Label" }, color = Color(0xB0FFFFFF), style = MaterialTheme.typography.labelSmall)
-                }
+    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.7f)
+                .aspectRatio(ratio)
+                .clip(RoundedCornerShape(if (small) 8.dp else 12.dp))
+                .background(Color(0xFF2C2C2C))
+                .padding(if (small) 10.dp else 12.dp),
+            contentAlignment = if (small) Alignment.Center else Alignment.CenterStart
+        ) {
+            if (small) {
                 Text(
                     value.ifBlank { "--" },
                     color = Color.White,
                     fontSize = fontSize.sp,
                     fontWeight = FontWeight.Bold
                 )
-            }
-            if (size == CardSize.WIDE) {
-                Spacer(modifier = Modifier.weight(1f))
-                Text(time, color = Color(0xB0FFFFFF), style = MaterialTheme.typography.labelSmall)
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Text(label.ifBlank { "Label" }, color = Color(0xB0FFFFFF), style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            value.ifBlank { "--" },
+                            color = Color.White,
+                            fontSize = fontSize.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (size == CardSize.WIDE) {
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(time, color = Color(0xB0FFFFFF), style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             }
         }
     }
