@@ -130,6 +130,31 @@ object WidgetUpdater {
         }
     }
 
+    fun getWidgetFontSize(context: Context, card: Card): Float {
+        val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
+        val pinnedIds = card.pinnedWidgetIds.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
+        val normTopic = card.topic.trim().removePrefix("/")
+        val mgr = AppWidgetManager.getInstance(context) ?: return 20f
+        val providers = listOf(
+            ComponentName(context, WidgetProviderSmall::class.java),
+            ComponentName(context, WidgetProviderCompact::class.java),
+            ComponentName(context, WidgetProviderWide::class.java)
+        )
+        for (provider in providers) {
+            val hosted = try { mgr.getAppWidgetIds(provider) ?: intArrayOf() } catch (_: Exception) { intArrayOf() }
+            for (id in hosted) {
+                val storedTopic = prefs.getString("widget_${id}_topic", null)
+                val matches = id in pinnedIds ||
+                    storedTopic == null ||
+                    storedTopic.isBlank() ||
+                    storedTopic.trim().removePrefix("/") == normTopic
+                if (!matches) continue
+                return prefs.getFloat("widget_${id}_fontSize", 0f).takeIf { it > 0f } ?: 20f
+            }
+        }
+        return 20f
+    }
+
     fun setPinnedWidgetFontSize(context: Context, cardId: String, sizeSp: Float) {
         scope.launch {
             try {

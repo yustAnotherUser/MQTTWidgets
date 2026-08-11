@@ -111,14 +111,9 @@ fun HomeScreen(modifier: Modifier = Modifier, showCreateDialog: Boolean, onDismi
         }
 
         editingCard?.let { card ->
-            val widgetPrefs = context.getSharedPreferences("widget_prefs", android.content.Context.MODE_PRIVATE)
-            val firstPinnedId = card.pinnedWidgetIds.split(",").mapNotNull { it.trim().toIntOrNull() }.firstOrNull()
-            val currentFontSize = firstPinnedId
-                ?.let { widgetPrefs.getFloat("widget_${it}_fontSize", 0f) }
-                ?.takeIf { it > 0f } ?: 20f
             EditWidgetDialog(
                 card = card,
-                initialFontSize = currentFontSize,
+                initialFontSize = WidgetUpdater.getWidgetFontSize(context, card),
                 onDismiss = { editingCardId = null },
                 onSave = { updatedCard ->
                     scope.launch {
