@@ -77,7 +77,7 @@ class ConfigActivity : AppCompatActivity() {
         })
 
         val previewBg = GradientDrawable().apply {
-            cornerRadius = 18f * resources.displayMetrics.density
+            cornerRadius = 12f * resources.displayMetrics.density
             setColor(0xFF2C2C2C.toInt())
         }
         val preview = FrameLayout(this).apply {

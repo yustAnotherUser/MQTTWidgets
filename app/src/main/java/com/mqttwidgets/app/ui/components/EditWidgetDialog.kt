@@ -14,7 +14,7 @@ import com.mqttwidgets.app.data.CardFormat
 import com.mqttwidgets.app.data.CardSize
 
 @Composable
-fun EditWidgetDialog(card: Card, onDismiss: () -> Unit, onSave: (Card) -> Unit, onDelete: () -> Unit) {
+fun EditWidgetDialog(card: Card, initialFontSize: Float, onDismiss: () -> Unit, onSave: (Card) -> Unit, onDelete: () -> Unit, onSaveFontSize: (Float) -> Unit) {
     var label by remember { mutableStateOf(card.label) }
     var topic by remember { mutableStateOf(card.topic) }
     var size by remember { mutableStateOf(card.size) }
@@ -24,6 +24,7 @@ fun EditWidgetDialog(card: Card, onDismiss: () -> Unit, onSave: (Card) -> Unit, 
     var unit by remember { mutableStateOf(card.unit) }
     var highThreshold by remember { mutableStateOf(if (card.highThreshold < 1e10) card.highThreshold.toString() else "") }
     var lowThreshold by remember { mutableStateOf(if (card.lowThreshold > -1e10) card.lowThreshold.toString() else "") }
+    var fontSize by remember { mutableStateOf(initialFontSize) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -61,6 +62,16 @@ fun EditWidgetDialog(card: Card, onDismiss: () -> Unit, onSave: (Card) -> Unit, 
                 })
 
                 HorizontalDivider()
+                Text("Widget Font Size", style = MaterialTheme.typography.labelMedium)
+                Text("${fontSize.toInt()} sp", style = MaterialTheme.typography.labelSmall)
+                Slider(
+                    value = fontSize,
+                    onValueChange = { fontSize = it },
+                    valueRange = 10f..40f,
+                    steps = 29
+                )
+
+                HorizontalDivider()
                 Text("State Colors", style = MaterialTheme.typography.labelMedium)
                 OutlinedTextField(value = highThreshold, onValueChange = { highThreshold = it }, label = { Text("High threshold (e.g. 30)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = lowThreshold, onValueChange = { lowThreshold = it }, label = { Text("Low threshold (e.g. 5)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
@@ -74,6 +85,7 @@ fun EditWidgetDialog(card: Card, onDismiss: () -> Unit, onSave: (Card) -> Unit, 
         confirmButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
+                    onSaveFontSize(fontSize)
                     onSave(card.copy(
                         label = label, topic = topic, size = size, format = format,
                         jsonPath = jsonPath, decimals = decimals.toIntOrNull() ?: 1, unit = unit,

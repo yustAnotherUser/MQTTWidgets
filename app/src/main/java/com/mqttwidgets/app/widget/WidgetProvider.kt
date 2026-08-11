@@ -130,9 +130,26 @@ object WidgetUpdater {
         }
     }
 
+    fun setPinnedWidgetFontSize(context: Context, cardId: String, sizeSp: Float) {
+        scope.launch {
+            try {
+                val db = AppDatabase.getDatabase(context)
+                val card = db.cardDao().getCardById(cardId) ?: return@launch
+                val ids = card.pinnedWidgetIds.split(",").mapNotNull { it.trim().toIntOrNull() }
+                if (ids.isEmpty()) return@launch
+                val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
+                prefs.edit().apply {
+                    for (id in ids) putFloat("widget_${id}_fontSize", sizeSp)
+                    apply()
+                }
+                updateAllWidgets(context)
+            } catch (_: Exception) {}
+        }
+    }
+
     fun roundedBackgroundBitmap(color: Int, density: Float): android.graphics.Bitmap {
         val sizePx = (128 * density).toInt().coerceAtLeast(192)
-        val radiusPx = (24 * density).toInt()
+        val radiusPx = (sizePx / 8).coerceAtLeast(8)
         val bmp = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bmp)
         val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { setColor(color) }

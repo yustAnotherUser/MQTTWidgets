@@ -21,6 +21,7 @@ import com.mqttwidgets.app.service.MqttService
 import com.mqttwidgets.app.ui.components.CreateWidgetDialog
 import com.mqttwidgets.app.ui.components.EditWidgetDialog
 import com.mqttwidgets.app.ui.components.WidgetCard
+import com.mqttwidgets.app.widget.WidgetUpdater
 import kotlinx.coroutines.launch
 
 @Composable
@@ -110,8 +111,14 @@ fun HomeScreen(modifier: Modifier = Modifier, showCreateDialog: Boolean, onDismi
         }
 
         editingCard?.let { card ->
+            val widgetPrefs = context.getSharedPreferences("widget_prefs", android.content.Context.MODE_PRIVATE)
+            val firstPinnedId = card.pinnedWidgetIds.split(",").mapNotNull { it.trim().toIntOrNull() }.firstOrNull()
+            val currentFontSize = firstPinnedId
+                ?.let { widgetPrefs.getFloat("widget_${it}_fontSize", 0f) }
+                ?.takeIf { it > 0f } ?: 20f
             EditWidgetDialog(
                 card = card,
+                initialFontSize = currentFontSize,
                 onDismiss = { editingCardId = null },
                 onSave = { updatedCard ->
                     scope.launch {
@@ -120,6 +127,7 @@ fun HomeScreen(modifier: Modifier = Modifier, showCreateDialog: Boolean, onDismi
                         editingCardId = null
                     }
                 },
+                onSaveFontSize = { size -> WidgetUpdater.setPinnedWidgetFontSize(context, card.cardId, size) },
                 onDelete = {
                     scope.launch {
                         db.cardDao().deleteCard(card.cardId)
