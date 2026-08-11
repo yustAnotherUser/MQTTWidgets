@@ -53,6 +53,7 @@ class MqttService : Service() {
     private var connected = false
     private var lastCards: List<Card> = emptyList()
     private val connectMutex = Mutex()
+    private val messageMutex = Mutex()
 
     private fun topicVariants(topic: String): List<String> {
         val t = topic.trim()
@@ -138,6 +139,7 @@ class MqttService : Service() {
             client.connect(options)
             connected = true
             reconnectDelay = INITIAL_RECONNECT_DELAY_MS
+            lastCards = emptyList()
             subscribeAll()
         } catch (e: Exception) {
             connected = false
@@ -157,7 +159,7 @@ class MqttService : Service() {
             message ?: return
             val payload = String(message.payload)
             updateNotification("MSG: ${payload.take(50)}")
-            scope.launch { handleIncomingMessage(topic, payload) }
+            scope.launch { messageMutex.withLock { handleIncomingMessage(topic, payload) } }
         }
 
         override fun deliveryComplete(token: org.eclipse.paho.client.mqttv3.IMqttDeliveryToken?) {}
