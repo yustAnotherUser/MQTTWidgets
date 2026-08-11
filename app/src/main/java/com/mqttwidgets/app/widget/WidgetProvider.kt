@@ -106,16 +106,6 @@ object WidgetUpdater {
         }
     }
 
-    fun updateAllWidgets(context: Context) {
-        val mgr = AppWidgetManager.getInstance(context)
-        val small = mgr.getAppWidgetIds(ComponentName(context, WidgetProviderSmall::class.java))
-        if (small.isNotEmpty()) renderWidgets(context, mgr, small, "SMALL")
-        val compact = mgr.getAppWidgetIds(ComponentName(context, WidgetProviderCompact::class.java))
-        if (compact.isNotEmpty()) renderWidgets(context, mgr, compact, "COMPACT")
-        val wide = mgr.getAppWidgetIds(ComponentName(context, WidgetProviderWide::class.java))
-        if (wide.isNotEmpty()) renderWidgets(context, mgr, wide, "WIDE")
-    }
-
     fun saveWidgetConfig(context: Context, appWidgetId: Int, card: Card) {
         val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
         val prefix = "widget_${appWidgetId}_"
@@ -155,37 +145,55 @@ object WidgetUpdater {
         return 20f
     }
 
-    fun setPinnedWidgetFontSize(context: Context, cardId: String, sizeSp: Float) {
-        scope.launch {
-            try {
-                val db = AppDatabase.getDatabase(context)
-                val card = db.cardDao().getCardById(cardId) ?: return@launch
-                val pinnedIds = card.pinnedWidgetIds.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
-                val normTopic = card.topic.trim().removePrefix("/")
-                val mgr = AppWidgetManager.getInstance(context) ?: return@launch
-                val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
-                var changed = false
-                val providers = listOf(
-                    ComponentName(context, WidgetProviderSmall::class.java),
-                    ComponentName(context, WidgetProviderCompact::class.java),
-                    ComponentName(context, WidgetProviderWide::class.java)
-                )
-                for (provider in providers) {
-                    val hosted = try { mgr.getAppWidgetIds(provider) ?: intArrayOf() } catch (_: Exception) { intArrayOf() }
-                    for (id in hosted) {
-                        val storedTopic = prefs.getString("widget_${id}_topic", null)
-                        val matches = id in pinnedIds ||
-                            storedTopic == null ||
-                            storedTopic.isBlank() ||
-                            storedTopic.trim().removePrefix("/") == normTopic
-                        if (!matches) continue
-                        prefs.edit().putFloat("widget_${id}_fontSize", sizeSp).apply()
-                        changed = true
+    fun applyFontSizeToCardWidgets(context: Context, card: Card, sizeSp: Float): Int {
+        val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
+        val pinnedIds = card.pinnedWidgetIds.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
+        val normTopic = card.topic.trim().removePrefix("/")
+        val mgr = AppWidgetManager.getInstance(context) ?: return 0
+        val content = com.mqttwidgets.app.util.WidgetRenderer.render(card)
+        val providers = listOf(
+            Triple(ComponentName(context, WidgetProviderSmall::class.java), R.layout.widget_small, "SMALL"),
+            Triple(ComponentName(context, WidgetProviderCompact::class.java), R.layout.widget_compact, "COMPACT"),
+            Triple(ComponentName(context, WidgetProviderWide::class.java), R.layout.widget_wide, "WIDE")
+        )
+        var updated = 0
+        for ((provider, layoutRes, size) in providers) {
+            val hosted = try {
+                mgr.getAppWidgetIds(provider) ?: intArrayOf()
+            } catch (e: Exception) {
+                android.util.Log.e("MQTTWidgets", "getAppWidgetIds failed for $provider", e)
+                intArrayOf()
+            }
+            for (id in hosted) {
+                val storedTopic = prefs.getString("widget_${id}_topic", null)
+                val matches = id in pinnedIds ||
+                    storedTopic == null ||
+                    storedTopic.isBlank() ||
+                    storedTopic.trim().removePrefix("/") == normTopic
+                if (!matches) continue
+                prefs.edit().putFloat("widget_${id}_fontSize", sizeSp).apply()
+                try {
+                    val views = RemoteViews(context.packageName, layoutRes)
+                    views.setTextViewText(R.id.widget_value, content.displayText)
+                    views.setImageViewBitmap(R.id.widget_bg, roundedBackgroundBitmap(content.backgroundColor, context.resources.displayMetrics.density))
+                    views.setTextViewTextSize(R.id.widget_value, android.util.TypedValue.COMPLEX_UNIT_SP, sizeSp)
+                    if (size != "SMALL") { views.setTextViewText(R.id.widget_label, content.labelText) }
+                    if (size == "WIDE") { views.setTextViewText(R.id.widget_time, content.timeText) }
+                    val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     }
+                    launchIntent?.let {
+                        val pi = android.app.PendingIntent.getActivity(context, 0, it, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+                        views.setOnClickPendingIntent(R.id.widget_container, pi)
+                    }
+                    mgr.updateAppWidget(id, views)
+                    updated++
+                } catch (e: Exception) {
+                    android.util.Log.e("MQTTWidgets", "render failed for widget $id", e)
                 }
-                if (changed) updateAllWidgets(context)
-            } catch (_: Exception) {}
+            }
         }
+        return updated
     }
 
     fun roundedBackgroundBitmap(color: Int, density: Float): android.graphics.Bitmap {

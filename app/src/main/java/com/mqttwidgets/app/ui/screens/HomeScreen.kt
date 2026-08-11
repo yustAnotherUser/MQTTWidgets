@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import com.mqttwidgets.app.data.AppDatabase
 import com.mqttwidgets.app.data.Card
 import com.mqttwidgets.app.data.CardSize
@@ -122,7 +123,15 @@ fun HomeScreen(modifier: Modifier = Modifier, showCreateDialog: Boolean, onDismi
                         editingCardId = null
                     }
                 },
-                onSaveFontSize = { size -> WidgetUpdater.setPinnedWidgetFontSize(context, card.cardId, size) },
+                onSaveFontSize = { size ->
+                    val applied = WidgetUpdater.applyFontSizeToCardWidgets(context, card, size)
+                    Toast.makeText(
+                        context,
+                        if (applied > 0) "Font size saved ($applied widget${if (applied > 1) "s" else ""})"
+                        else "No widget found for this card",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
                 onDelete = {
                     scope.launch {
                         db.cardDao().deleteCard(card.cardId)
