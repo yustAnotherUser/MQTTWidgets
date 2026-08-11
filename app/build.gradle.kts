@@ -13,8 +13,8 @@ android {
         applicationId = "com.mqttwidgets.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10
-        versionName = "2.8.4"
+        versionCode = 11
+        versionName = "2.8.5"
     }
 
     buildTypes {

@@ -67,11 +67,15 @@ object WidgetUpdater {
 
             val views = RemoteViews(context.packageName, layoutRes)
             views.setTextViewText(R.id.widget_value, value)
+            views.setImageViewBitmap(R.id.widget_bg, roundedBackgroundBitmap(bgColor, context.resources.displayMetrics.density))
+            val fontSize = prefs.getFloat("${prefix}fontSize", 0f)
+            if (fontSize > 0f) {
+                views.setTextViewTextSize(R.id.widget_value, android.util.TypedValue.COMPLEX_UNIT_SP, fontSize)
+            }
             if (size != "SMALL") { views.setTextViewText(R.id.widget_label, label) }
             if (size == "WIDE") {
                 views.setTextViewText(R.id.widget_time, time)
             }
-            views.setInt(R.id.widget_container, "setBackgroundColor", bgColor)
 
             val intent = Intent(context, com.mqttwidgets.app.MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -124,6 +128,16 @@ object WidgetUpdater {
             putInt("${prefix}statusColor", if (card.consecutiveFailures == 0) 0xFF43A047.toInt() else 0xFFE53935.toInt())
             apply()
         }
+    }
+
+    fun roundedBackgroundBitmap(color: Int, density: Float): android.graphics.Bitmap {
+        val sizePx = (128 * density).toInt().coerceAtLeast(192)
+        val radiusPx = (24 * density).toInt()
+        val bmp = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bmp)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { setColor(color) }
+        canvas.drawRoundRect(0f, 0f, sizePx.toFloat(), sizePx.toFloat(), radiusPx.toFloat(), radiusPx.toFloat(), paint)
+        return bmp
     }
 
     private fun formatTime(ts: Long): String {

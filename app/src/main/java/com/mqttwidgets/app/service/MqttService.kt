@@ -141,6 +141,7 @@ class MqttService : Service() {
             reconnectDelay = INITIAL_RECONNECT_DELAY_MS
             lastCards = emptyList()
             subscribeAll()
+            updateNotification("Connected")
         } catch (e: Exception) {
             connected = false
             updateNotification("Disconnected: ${e.message?.take(40)}")
@@ -158,7 +159,6 @@ class MqttService : Service() {
         override fun messageArrived(topic: String, message: MqttMessage?) {
             message ?: return
             val payload = String(message.payload)
-            updateNotification("MSG: ${payload.take(50)}")
             scope.launch { messageMutex.withLock { handleIncomingMessage(topic, payload) } }
         }
 
@@ -174,7 +174,6 @@ class MqttService : Service() {
         val allCards = db.cardDao().getAllCardsSync()
         val normTopic = normalizeTopic(topic)
         val cards = allCards.filter { normalizeTopic(it.topic) == normTopic }
-        updateNotification("DB: ${allCards.size} cards, ${cards.size} match")
         val now = System.currentTimeMillis()
 
         for (card in cards) {
@@ -216,26 +215,12 @@ class MqttService : Service() {
 
         val content = WidgetRenderer.render(card)
         var updatedCount = 0
-        var reason = "no widgets found"
 
         for ((provider, layoutRes, size) in providers) {
             val hosted = try {
                 appWidgetManager.getAppWidgetIds(provider) ?: intArrayOf()
             } catch (_: Exception) {
                 intArrayOf()
-            }
-
-            val views = RemoteViews(packageName, layoutRes)
-            views.setTextViewText(R.id.widget_value, content.displayText)
-            views.setInt(R.id.widget_container, "setBackgroundColor", content.backgroundColor)
-            try { views.setTextViewText(R.id.widget_label, content.labelText) } catch (_: Exception) {}
-            try { views.setTextViewText(R.id.widget_time, content.timeText) } catch (_: Exception) {}
-            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
-            launchIntent?.let {
-                val pi = android.app.PendingIntent.getActivity(this, 0, it, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
-                views.setOnClickPendingIntent(R.id.widget_container, pi)
             }
 
             for (widgetId in hosted) {
@@ -248,17 +233,32 @@ class MqttService : Service() {
                 if (!matches) continue
 
                 try {
+                    val views = RemoteViews(packageName, layoutRes)
+                    views.setTextViewText(R.id.widget_value, content.displayText)
+                    views.setImageViewBitmap(R.id.widget_bg, WidgetUpdater.roundedBackgroundBitmap(content.backgroundColor, resources.displayMetrics.density))
+                    val fontSize = prefs.getFloat("widget_${widgetId}_fontSize", 0f)
+                    if (fontSize > 0f) {
+                        views.setTextViewTextSize(R.id.widget_value, android.util.TypedValue.COMPLEX_UNIT_SP, fontSize)
+                    }
+                    try { views.setTextViewText(R.id.widget_label, content.labelText) } catch (_: Exception) {}
+                    try { views.setTextViewText(R.id.widget_time, content.timeText) } catch (_: Exception) {}
+                    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    launchIntent?.let {
+                        val pi = android.app.PendingIntent.getActivity(this, 0, it, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+                        views.setOnClickPendingIntent(R.id.widget_container, pi)
+                    }
                     WidgetUpdater.saveWidgetConfig(this, widgetId, card)
                     appWidgetManager.updateAppWidget(widgetId, views)
                     updatedCount++
                 } catch (e: Exception) {
-                    reason = "err ${e.message?.take(30)}"
+                    updatedCount = 0
+                    e.printStackTrace()
                 }
             }
             if (updatedCount > 0) break
         }
-
-        updateNotification("DB WIDGETS: updated=$updatedCount ($reason) | value=${content.displayText.take(20)}")
     }
 
     private suspend fun subscribeAll() {
@@ -268,7 +268,6 @@ class MqttService : Service() {
 
         if (!connected) {
             lastCards = newCards
-            updateNotification("Not connected, stored ${newCards.size} topics")
             return
         }
 
@@ -284,9 +283,8 @@ class MqttService : Service() {
                     mqttClient?.subscribe(topics.toTypedArray(), qosArray)
                 }
             }
-            updateNotification("OK: ${newCards.size} topic(s) | last=${lastCards.size} | new=${changes.toSubscribe.size}")
         } catch (e: Exception) {
-            updateNotification("ERR: ${e.message?.take(60)}")
+            e.printStackTrace()
         }
 
         topicManager.reset()

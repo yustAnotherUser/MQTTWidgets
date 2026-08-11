@@ -3,8 +3,13 @@
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="8dp"
-    android:background="#FF424242">
+    android:padding="8dp">
+    <ImageView
+        android:id="@+id/widget_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:contentDescription="@null" />
     <TextView android:id="@+id/widget_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
