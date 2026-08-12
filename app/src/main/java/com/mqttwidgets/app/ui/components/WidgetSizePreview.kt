@@ -25,7 +25,7 @@ fun WidgetSizePreview(
     modifier: Modifier = Modifier
 ) {
     val ratio = when (size) {
-        CardSize.SMALL -> 1f
+        CardSize.SMALL -> 1.08f
         CardSize.COMPACT -> 2f
         CardSize.WIDE -> 3f
     }
@@ -35,7 +35,7 @@ fun WidgetSizePreview(
             modifier = Modifier
                 .fillMaxWidth(0.7f)
                 .aspectRatio(ratio)
-                .clip(RoundedCornerShape(if (small) 8.dp else 12.dp))
+                .clip(RoundedCornerShape(if (small) 24.dp else 36.dp))
                 .background(Color(0xFF2C2C2C))
                 .padding(if (small) 10.dp else 12.dp),
             contentAlignment = if (small) Alignment.Center else Alignment.CenterStart

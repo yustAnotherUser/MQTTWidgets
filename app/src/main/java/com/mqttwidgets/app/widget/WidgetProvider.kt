@@ -198,7 +198,7 @@ object WidgetUpdater {
 
     fun roundedBackgroundBitmap(color: Int, density: Float): android.graphics.Bitmap {
         val sizePx = (128 * density).toInt().coerceAtLeast(192)
-        val radiusPx = (sizePx / 14).coerceAtLeast(6)
+        val radiusPx = (sizePx * 3 / 14).coerceAtLeast(6)
         val bmp = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bmp)
         val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { setColor(color) }

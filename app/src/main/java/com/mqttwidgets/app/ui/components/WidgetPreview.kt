@@ -24,7 +24,7 @@ fun WidgetPreview(card: Card, modifier: Modifier = Modifier) {
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(Color(content.backgroundColor))
             .padding(horizontal = if (card.size.name == "SMALL") 20.dp else 12.dp, vertical = if (card.size.name == "SMALL") 20.dp else 8.dp)
     ) {
