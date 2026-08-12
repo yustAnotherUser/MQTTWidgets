@@ -11,6 +11,7 @@ import android.content.Intent
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.mqttwidgets.app.R
@@ -54,6 +55,7 @@ class MqttService : Service() {
     private var lastCards: List<Card> = emptyList()
     private val connectMutex = Mutex()
     private val messageMutex = Mutex()
+    private var wakeLock: PowerManager.WakeLock? = null
 
     private fun topicVariants(topic: String): List<String> {
         val t = topic.trim()
@@ -138,20 +140,40 @@ class MqttService : Service() {
 
             client.connect(options)
             connected = true
+            acquireWakeLock()
             reconnectDelay = INITIAL_RECONNECT_DELAY_MS
             lastCards = emptyList()
             subscribeAll()
             updateNotification("Connected")
         } catch (e: Exception) {
             connected = false
+            releaseWakeLock()
             updateNotification("Disconnected: ${e.message?.take(40)}")
             scheduleReconnect()
         }
     }
 
+    private fun acquireWakeLock() {
+        try {
+            if (wakeLock == null) {
+                wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager)
+                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MQTTWidgets:MqttService")
+                    .apply { setReferenceCounted(false) }
+            }
+            wakeLock?.acquire()
+        } catch (_: Exception) {}
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) wakeLock?.release()
+        } catch (_: Exception) {}
+    }
+
     private val mqttCallback = object : MqttCallback {
         override fun connectionLost(cause: Throwable?) {
             connected = false
+            releaseWakeLock()
             updateNotification("Disconnected")
             scheduleReconnect()
         }
@@ -391,6 +413,7 @@ class MqttService : Service() {
         } catch (_: Exception) {
         }
         connected = false
+        releaseWakeLock()
         super.onDestroy()
     }
 

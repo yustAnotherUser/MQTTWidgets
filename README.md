@@ -4,7 +4,7 @@ Turn your home screen into a live dashboard for your MQTT devices.
 
 MQTT Widgets is an Android app that subscribes to your MQTT broker and renders incoming values directly on home-screen widgets — with **1x1**, **2x1** and **3x1** layouts — while keeping a full in-app dashboard for management, live preview and configuration.
 
-![GitHub Release](https://img.shields.io/badge/version-2.9.2-blue)
+![GitHub Release](https://img.shields.io/badge/version-2.9.3-blue)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-yellow)
 
