@@ -15,7 +15,7 @@ MQTT Widgets — Android app (Kotlin + Jetpack Compose, Material 3) that renders
   .\gradlew.bat clean :app:assembleDebug --console=plain
   ```
 - The APK lands at `app\build\outputs\apk\debug\app-debug.apk`.
-- Build output goes to a log and poll for completion instead of blocking on the command: the wrapper can get killed by the tool but Gradle keeps running. Use `release.ps1` (below) which does this correctly.
+- Blocking on the build is fine, but poll for completion in **short intervals** (check process/APK timestamp or the log tail every few seconds) — never wait out a fixed long sleep. The tool wrapper can be killed (reported as `ChildProcess.kill`) while Gradle keeps running in the background, so completion is detected by polling, not by the command returning. `release.ps1` (below) does the same thing by writing to a stable log you can tail.
 
 ## Releasing (do NOT reinvent the pipeline)
 
