@@ -113,6 +113,20 @@ The widget configuration is persisted in `widget_prefs` clamped to each widget I
 ./gradlew test
 ```
 
+### Releasing
+
+The full release pipeline (bump version, clean build, deploy to the local download server, commit/push, GitHub release) is automated in `release.ps1`:
+
+```powershell
+# auto-increment the patch version (e.g. 2.9.2 -> 2.9.3)
+.\release.ps1 -CommitMessage "Release v2.9.3" -Notes "Debug build v2.9.3"
+
+# or specify the version explicitly
+.\release.ps1 -Version 2.9.3 -CommitMessage "Release v2.9.3" -Notes "Debug build v2.9.3"
+```
+
+The APK is published to the GitHub **Releases** page (tag `v<version>`) and served at the local download server (`http://192.168.178.39:8888/`); it is never committed to the repository.
+
 > [!NOTE]
 > Use JDK 17. The project targets `compileSdk 34` / `minSdk 26` and uses Kotlin 2.0 with the Compose compiler plugin.
 
